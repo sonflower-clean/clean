@@ -67,3 +67,46 @@ export async function createUser(formData: FormData) {
   revalidatePath('/manage/users')
   return { success: true }
 }
+
+export async function adminChangePassword(userId: string, newPassword: string) {
+  const supabaseServer = await createClient()
+  
+  // Verify admin
+  const { data: { user } } = await supabaseServer.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabaseServer.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return { error: 'Unauthorized' }
+
+  if (!newPassword || newPassword.length < 8) {
+    return { error: '비밀번호는 8자 이상이어야 합니다.' }
+  }
+
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceRoleKey) {
+    return { error: '관리자 권한의 비밀번호 변경을 사용하려면 Supabase의 service_role Key 설정이 필요합니다. (.env.local 및 Netlify에 SUPABASE_SERVICE_ROLE_KEY 등록 필요)' }
+  }
+
+  // Create admin client
+  const adminClient = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  )
+
+  const { error } = await adminClient.auth.admin.updateUserById(userId, {
+    password: newPassword
+  })
+
+  if (error) {
+    return { error: `비밀번호 변경 실패: ${error.message}` }
+  }
+
+  return { success: true }
+}
+

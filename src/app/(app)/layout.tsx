@@ -10,7 +10,8 @@ import {
   DollarSign, 
   CreditCard,
   Users,
-  LogOut
+  LogOut,
+  Key
 } from 'lucide-react'
 import styles from './layout.module.css'
 
@@ -107,6 +108,21 @@ export default async function AppLayout({
             <span className={styles.userRole}>
               {role === 'admin' ? '관리자' : role === 'laundry_manager' ? '세탁담당자' : '숙박업소담당자'}
             </span>
+            <Link 
+              href="/change-password" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.4rem', 
+                fontSize: '0.75rem', 
+                color: 'var(--primary-400)', 
+                marginTop: '0.5rem',
+                textDecoration: 'none'
+              }}
+            >
+              <Key size={12} />
+              <span>비밀번호 변경</span>
+            </Link>
           </div>
           
           <form action="/api/auth/logout" method="post">

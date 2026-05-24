@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { createUser } from './actions'
+import { Edit2, Trash2, Key } from 'lucide-react'
+import { createUser, adminChangePassword } from './actions'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
-import { Edit2, Trash2 } from 'lucide-react'
 
 type Profile = {
   id: string;
@@ -40,6 +40,43 @@ export default function ClientPage({
   const [loading, setLoading] = useState(false)
   
   const supabase = createClient()
+
+  const [isPwModalOpen, setIsPwModalOpen] = useState(false)
+  const [pwEditingUser, setPwEditingUser] = useState<Profile | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [pwLoading, setPwLoading] = useState(false)
+
+  const handleOpenPwModal = (item: Profile) => {
+    setPwEditingUser(item)
+    setNewPassword('')
+    setIsPwModalOpen(true)
+  }
+
+  const handleClosePwModal = () => {
+    setIsPwModalOpen(false)
+    setPwEditingUser(null)
+    setNewPassword('')
+  }
+
+  const handlePwSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pwEditingUser) return
+    if (!newPassword || newPassword.length < 8) {
+      alert('비밀번호는 8자 이상이어야 합니다.')
+      return
+    }
+
+    setPwLoading(true)
+    const result = await adminChangePassword(pwEditingUser.id, newPassword)
+    setPwLoading(false)
+
+    if (result?.error) {
+      alert(result.error)
+    } else {
+      alert('비밀번호가 성공적으로 변경되었습니다.')
+      handleClosePwModal()
+    }
+  }
 
   const handleOpenEditModal = (item: Profile) => {
     setEditingItem(item)
@@ -166,6 +203,9 @@ export default function ClientPage({
                     <Button variant="ghost" size="sm" onClick={() => handleOpenEditModal(item)}>
                       <Edit2 size={16} /> 수정
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleOpenPwModal(item)} style={{ color: 'var(--primary-600)' }}>
+                      <Key size={16} /> PW 변경
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(item)} style={{ color: 'var(--danger)' }}>
                       <Trash2 size={16} /> 삭제
                     </Button>
@@ -249,6 +289,28 @@ export default function ClientPage({
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
             <Button type="button" variant="outline" onClick={handleCloseModal}>취소</Button>
             <Button type="submit" disabled={loading}>{loading ? '처리 중...' : '저장'}</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal 
+        isOpen={isPwModalOpen} 
+        onClose={handleClosePwModal} 
+        title={`비밀번호 재설정 (${pwEditingUser?.full_name || ''})`}
+      >
+        <form onSubmit={handlePwSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Input 
+            label="새 비밀번호" 
+            type="password"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            required 
+            placeholder="8자리 이상 비밀번호"
+          />
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+            <Button type="button" variant="outline" onClick={handleClosePwModal}>취소</Button>
+            <Button type="submit" disabled={pwLoading}>{pwLoading ? '변경 중...' : '비밀번호 재설정'}</Button>
           </div>
         </form>
       </Modal>
