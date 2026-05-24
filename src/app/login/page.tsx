@@ -29,7 +29,7 @@ export default function LoginPage() {
     <div className={styles.container}>
       <Card className={styles.card}>
         <CardHeader>
-          <CardTitle className="text-2xl text-center">선플라워 클린</CardTitle>
+          <CardTitle className="text-2xl text-center">153-클린</CardTitle>
           <CardDescription className="text-center">세탁 관리 시스템 로그인</CardDescription>
         </CardHeader>
         <CardContent>

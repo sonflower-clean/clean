@@ -83,7 +83,7 @@ export default async function AppLayout({
       {/* Sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <span>선플라워 클린</span>
+          <span>153-클린</span>
         </div>
         
         <nav className={styles.nav}>

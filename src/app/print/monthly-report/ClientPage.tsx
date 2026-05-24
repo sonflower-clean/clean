@@ -195,7 +195,7 @@ export default function ClientPage({
 
         <div className="info-box">
           <div className="info-title">공급자</div>
-          <div className="info-row"><div className="info-label">상호명:</div><div>153-clean</div></div>
+          <div className="info-row"><div className="info-label">상호명:</div><div>153-클린</div></div>
           <div className="info-row"><div className="info-label">사업자번호:</div><div></div></div>
           <div className="info-row"><div className="info-label">대표자명:</div><div></div></div>
           <div className="info-row"><div className="info-label">연락처:</div><div></div></div>
