@@ -24,6 +24,7 @@ export default async function DashboardPage() {
   const { data: accommodations } = await supabase
     .from('accommodations')
     .select('id, name')
+    .eq('is_active', true)
     .order('name')
 
   // Fetch Items

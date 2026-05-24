@@ -40,7 +40,7 @@ export default function ClientPage({ initialData }: { initialData: Accommodation
   }
 
   const handleDelete = async (item: Accommodation) => {
-    if (!window.confirm(`'${item.name}' 업소를 정말 삭제하시겠습니까?\n(과거 기록 보존을 위해 실제로는 비활성화 처리됩니다)`)) return
+    if (!window.confirm(`'${item.name}' 업소를 정말 삭제(비활성화)하시겠습니까?\n(거래 종료 상태로 변경됩니다)`)) return
 
     const { error } = await supabase
       .from('accommodations')
@@ -48,10 +48,10 @@ export default function ClientPage({ initialData }: { initialData: Accommodation
       .eq('id', item.id)
 
     if (!error) {
-      setData(data.filter(d => d.id !== item.id))
-      alert('삭제되었습니다.')
+      setData(data.map(d => d.id === item.id ? { ...d, is_active: false } : d))
+      alert('비활성화 처리되었습니다.')
     } else {
-      alert('삭제에 실패했습니다.')
+      alert('비활성화 처리에 실패했습니다.')
     }
   }
 
@@ -127,7 +127,7 @@ export default function ClientPage({ initialData }: { initialData: Accommodation
               </TableCell>
             </TableRow>
           ) : (
-            data.filter(item => item.is_active).map((item) => (
+            data.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>{item.owner_name}</TableCell>
