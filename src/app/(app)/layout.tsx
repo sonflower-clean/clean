@@ -1,18 +1,7 @@
 import React from 'react'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
-import { 
-  LayoutDashboard, 
-  FileEdit, 
-  Building2, 
-  Package, 
-  DollarSign, 
-  CreditCard,
-  Users,
-  LogOut,
-  Key
-} from 'lucide-react'
+import Sidebar from './Sidebar'
 import styles from './layout.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -64,75 +53,10 @@ export default async function AppLayout({
     )
   }
 
-  const role = profile?.role || 'accommodation_manager'
-  
-  const navItems = [
-    { label: '대시보드', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'laundry_manager', 'accommodation_manager'] },
-    { label: '일별 업무 입력', href: '/daily-entry', icon: FileEdit, roles: ['admin', 'laundry_manager'] },
-    { label: '거래처 관리', href: '/manage/accommodations', icon: Building2, roles: ['admin'] },
-    { label: '세탁 품목 관리', href: '/manage/items', icon: Package, roles: ['admin'] },
-    { label: '단가 관리', href: '/manage/prices', icon: DollarSign, roles: ['admin'] },
-    { label: '소모품 및 비용 관리', href: '/manage/expenses', icon: CreditCard, roles: ['admin'] },
-    { label: '계정 관리', href: '/manage/users', icon: Users, roles: ['admin'] },
-  ]
-
-  const filteredNavItems = navItems.filter(item => item.roles.includes(role))
-
   return (
     <div className={styles.layout}>
-      {/* Sidebar */}
-      <aside className={styles.sidebar}>
-        <div className={styles.sidebarHeader}>
-          <span>153-클린</span>
-        </div>
-        
-        <nav className={styles.nav}>
-          {filteredNavItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <Link 
-                key={item.href} 
-                href={item.href}
-                className={styles.navItem}
-              >
-                <Icon className={styles.navIcon} />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className={styles.sidebarFooter}>
-          <div className={styles.userInfo}>
-            <span className={styles.userName}>{profile?.full_name || user.email}</span>
-            <span className={styles.userRole}>
-              {role === 'admin' ? '관리자' : role === 'laundry_manager' ? '세탁담당자' : '숙박업소담당자'}
-            </span>
-            <Link 
-              href="/change-password" 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.4rem', 
-                fontSize: '0.75rem', 
-                color: 'var(--primary-400)', 
-                marginTop: '0.5rem',
-                textDecoration: 'none'
-              }}
-            >
-              <Key size={12} />
-              <span>비밀번호 변경</span>
-            </Link>
-          </div>
-          
-          <form action="/api/auth/logout" method="post">
-            <button className={styles.logoutBtn} type="submit">
-              <LogOut className={styles.navIcon} />
-              <span>로그아웃</span>
-            </button>
-          </form>
-        </div>
-      </aside>
+      {/* Client Component Sidebar handles both mobile responsive header, overlay and panel */}
+      <Sidebar profile={profile} email={user.email || null} />
 
       {/* Main Content Area */}
       <main className={styles.main}>
