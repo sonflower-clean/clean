@@ -60,12 +60,29 @@ export default async function PrintMonthlyReportPage({
     .gte('date', startDate)
     .lte('date', endDate)
 
+  // Fetch Company Info details
+  let { data: companyInfo } = await supabase
+    .from('company_info')
+    .select('*')
+    .maybeSingle()
+
+  if (!companyInfo) {
+    companyInfo = {
+      name: '153-클린',
+      business_number: '',
+      owner_name: '',
+      phone: '',
+      address: ''
+    }
+  }
+
   return (
     <ClientPage 
       accommodation={accommodation}
       items={items || []}
       records={records || []}
       month={month}
+      companyInfo={companyInfo}
     />
   )
 }

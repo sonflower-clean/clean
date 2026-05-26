@@ -1,0 +1,445 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
+import { Printer, Calculator, DollarSign, TrendingUp, ArrowDownRight, ArrowUpRight } from 'lucide-react'
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts'
+import { format } from 'date-fns'
+
+type Accommodation = {
+  id: string
+  name: string
+}
+
+type RecordItem = {
+  quantity: number
+  applied_price: number
+}
+
+type DailyRecord = {
+  id: string
+  date: string
+  accommodation_id: string
+  daily_record_items: RecordItem[]
+}
+
+type Expense = {
+  id: string
+  date: string
+  amount: number
+}
+
+export default function ClientPage({
+  accommodations,
+  records,
+  expenses
+}: {
+  accommodations: Accommodation[]
+  records: DailyRecord[]
+  expenses: Expense[]
+}) {
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+
+  // Available Years dynamic detection
+  const years = useMemo(() => {
+    const recordYears = records.map(r => new Date(r.date).getFullYear())
+    const expenseYears = expenses.map(e => new Date(e.date).getFullYear())
+    const allYears = [...recordYears, ...expenseYears, new Date().getFullYear()]
+    return Array.from(new Set(allYears)).sort((a, b) => b - a)
+  }, [records, expenses])
+
+  // Filter records & expenses for selected year
+  const yearRecords = useMemo(() => {
+    return records.filter(r => new Date(r.date).getFullYear() === selectedYear)
+  }, [records, selectedYear])
+
+  const yearExpenses = useMemo(() => {
+    return expenses.filter(e => new Date(e.date).getFullYear() === selectedYear)
+  }, [expenses, selectedYear])
+
+  const months = Array.from({ length: 12 }, (_, i) => i + 1)
+
+  // Monthly Revenue by Accommodation: accommodationId -> month -> amount
+  const accommodationMonthlyRevenue = useMemo(() => {
+    const revMap: Record<string, Record<number, number>> = {}
+    
+    accommodations.forEach(acc => {
+      revMap[acc.id] = {}
+      months.forEach(m => {
+        revMap[acc.id][m] = 0
+      })
+    })
+
+    yearRecords.forEach(r => {
+      const dateObj = new Date(r.date)
+      const month = dateObj.getMonth() + 1
+      const accId = r.accommodation_id
+      if (revMap[accId]) {
+        const dailyRev = r.daily_record_items.reduce((sum, item) => sum + (item.quantity * item.applied_price), 0)
+        revMap[accId][month] += dailyRev
+      }
+    })
+
+    return revMap
+  }, [yearRecords, accommodations])
+
+  // Monthly Total Revenue: month -> amount
+  const monthlyTotalRevenue = useMemo(() => {
+    const revMap: Record<number, number> = {}
+    months.forEach(m => {
+      revMap[m] = 0
+    })
+
+    accommodations.forEach(acc => {
+      months.forEach(m => {
+        revMap[m] += accommodationMonthlyRevenue[acc.id]?.[m] || 0
+      })
+    })
+
+    return revMap
+  }, [accommodationMonthlyRevenue, accommodations])
+
+  // Monthly Total Expenses: month -> amount
+  const monthlyTotalExpenses = useMemo(() => {
+    const expMap: Record<number, number> = {}
+    months.forEach(m => {
+      expMap[m] = 0
+    })
+
+    yearExpenses.forEach(e => {
+      const dateObj = new Date(e.date)
+      const month = dateObj.getMonth() + 1
+      if (expMap[month] !== undefined) {
+        expMap[month] += e.amount
+      }
+    })
+
+    return expMap
+  }, [yearExpenses])
+
+  // Monthly Net Profit: month -> amount
+  const monthlyNetProfit = useMemo(() => {
+    const profitMap: Record<number, number> = {}
+    months.forEach(m => {
+      profitMap[m] = (monthlyTotalRevenue[m] || 0) - (monthlyTotalExpenses[m] || 0)
+    })
+    return profitMap
+  }, [monthlyTotalRevenue, monthlyTotalExpenses])
+
+  // Annual Totals
+  const annualTotalRevenue = useMemo(() => {
+    return Object.values(monthlyTotalRevenue).reduce((sum, val) => sum + val, 0)
+  }, [monthlyTotalRevenue])
+
+  const annualTotalExpenses = useMemo(() => {
+    return Object.values(monthlyTotalExpenses).reduce((sum, val) => sum + val, 0)
+  }, [monthlyTotalExpenses])
+
+  const annualNetProfit = annualTotalRevenue - annualTotalExpenses
+
+  // Recharts Chart Data
+  const chartData = useMemo(() => {
+    return months.map(m => ({
+      name: `${m}월`,
+      매출액: monthlyTotalRevenue[m] || 0,
+      지출비용: monthlyTotalExpenses[m] || 0,
+      순이익: monthlyNetProfit[m] || 0
+    }))
+  }, [monthlyTotalRevenue, monthlyTotalExpenses, monthlyNetProfit])
+
+  const handlePrint = () => {
+    window.print()
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Hide elements on print */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .print-only { display: block !important; }
+          body { background: white; padding: 0; }
+          .content { padding: 0; }
+          .print-table-container { overflow: visible !important; }
+          table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+          th, td { border: 1px solid #333 !important; padding: 6px !important; font-size: 0.75rem !important; }
+          .print-sticky { position: static !important; background: transparent !important; border: 1px solid #333 !important; box-shadow: none !important; }
+        }
+        .print-only { display: none; }
+      `}</style>
+
+      {/* Header (Screen only) */}
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Calculator className="text-primary" size={28} />
+          <h1 className="text-2xl font-bold">연간 및 월간 결산</h1>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Button variant="outline" onClick={handlePrint}>
+            <Printer size={16} /> 결산서 인쇄
+          </Button>
+          <select 
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+            style={{
+              height: '2.5rem',
+              padding: '0 1rem',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--input-border)',
+              backgroundColor: 'white',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            {years.map(y => (
+              <option key={y} value={y}>{y}년 결산</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Report Header (Print only) */}
+      <div className="print-only" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{selectedYear}년도 세탁 손익 결산 보고서</h1>
+        <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+          출력자: 관리자 | 출력일시: {format(new Date(), 'yyyy-MM-dd HH:mm')} | 업체명: 153-클린
+        </p>
+      </div>
+
+      {/* Summary Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+        <Card style={{ borderLeft: '4px solid var(--primary)' }}>
+          <CardContent style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--surface-500)', fontWeight: 500 }}>연간 총 매출액</p>
+              <h3 className="text-2xl font-bold text-primary" style={{ marginTop: '0.25rem' }}>
+                {annualTotalRevenue.toLocaleString()}원
+              </h3>
+            </div>
+            <div style={{ backgroundColor: 'var(--primary-50)', padding: '0.75rem', borderRadius: '50%' }}>
+              <TrendingUp className="text-primary" size={24} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card style={{ borderLeft: '4px solid var(--danger)' }}>
+          <CardContent style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--surface-500)', fontWeight: 500 }}>연간 총 지출 비용</p>
+              <h3 className="text-2xl font-bold text-danger" style={{ marginTop: '0.25rem' }}>
+                {annualTotalExpenses.toLocaleString()}원
+              </h3>
+            </div>
+            <div style={{ backgroundColor: 'var(--danger-50)', padding: '0.75rem', borderRadius: '50%' }}>
+              <ArrowDownRight className="text-danger" size={24} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card style={{ borderLeft: '4px solid var(--success)' }}>
+          <CardContent style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--surface-500)', fontWeight: 500 }}>연간 순 이익</p>
+              <h3 className="text-2xl font-bold text-success" style={{ marginTop: '0.25rem' }}>
+                {annualNetProfit.toLocaleString()}원
+              </h3>
+            </div>
+            <div style={{ backgroundColor: 'var(--success-50)', padding: '0.75rem', borderRadius: '50%' }}>
+              <ArrowUpRight className="text-success" size={24} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Chart (Screen only) */}
+      <div className="no-print">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">월별 세탁 손익 추이 ({selectedYear}년)</CardTitle>
+          </CardHeader>
+          <CardContent style={{ height: '350px', padding: '1rem 0' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(val) => `${(val / 10000).toLocaleString()}만`} />
+                <Tooltip formatter={(value: any) => [`${value.toLocaleString()}원`]} />
+                <Legend />
+                <Bar dataKey="매출액" fill="#0066cc" />
+                <Bar dataKey="지출비용" fill="#ef4444" />
+                <Bar dataKey="순이익" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Table 1: Monthly Financial Summary */}
+      <Card className="print-table-container">
+        <CardHeader className="no-print">
+          <CardTitle className="text-lg">월별 종합 결산표</CardTitle>
+        </CardHeader>
+        <CardContent style={{ padding: '1.5rem', overflowX: 'auto' }}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead style={{ minWidth: '100px', textAlign: 'center', fontWeight: 'bold' }}>구분</TableHead>
+                {months.map(m => (
+                  <TableHead key={m} style={{ minWidth: '80px', textAlign: 'right', fontWeight: 'bold' }}>{m}월</TableHead>
+                ))}
+                <TableHead style={{ minWidth: '110px', textAlign: 'right', fontWeight: 'bold', backgroundColor: 'var(--surface-50)' }}>합계</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* Revenue */}
+              <TableRow>
+                <TableCell style={{ textAlign: 'center', fontWeight: 600 }}>매출액 (A)</TableCell>
+                {months.map(m => (
+                  <TableCell key={m} className="text-primary" style={{ textAlign: 'right' }}>
+                    {monthlyTotalRevenue[m] > 0 ? `${monthlyTotalRevenue[m].toLocaleString()}원` : '-'}
+                  </TableCell>
+                ))}
+                <TableCell className="font-bold text-primary" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)' }}>
+                  {annualTotalRevenue.toLocaleString()}원
+                </TableCell>
+              </TableRow>
+
+              {/* Expenses */}
+              <TableRow>
+                <TableCell style={{ textAlign: 'center', fontWeight: 600 }}>지출비용 (B)</TableCell>
+                {months.map(m => (
+                  <TableCell key={m} className="text-danger" style={{ textAlign: 'right' }}>
+                    {monthlyTotalExpenses[m] > 0 ? `${monthlyTotalExpenses[m].toLocaleString()}원` : '-'}
+                  </TableCell>
+                ))}
+                <TableCell className="font-bold text-danger" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)' }}>
+                  {annualTotalExpenses.toLocaleString()}원
+                </TableCell>
+              </TableRow>
+
+              {/* Net Profit */}
+              <TableRow style={{ backgroundColor: 'var(--success-50)', fontWeight: 'bold' }}>
+                <TableCell style={{ textAlign: 'center' }}>순이익 (A-B)</TableCell>
+                {months.map(m => {
+                  const profit = monthlyNetProfit[m]
+                  return (
+                    <TableCell key={m} className={profit >= 0 ? 'text-success' : 'text-danger'} style={{ textAlign: 'right' }}>
+                      {profit !== 0 ? `${profit.toLocaleString()}원` : '-'}
+                    </TableCell>
+                  )
+                })}
+                <TableCell className={annualNetProfit >= 0 ? 'text-success' : 'text-danger'} style={{ textAlign: 'right', fontSize: '0.95rem' }}>
+                  {annualNetProfit.toLocaleString()}원
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Table 2: Accommodation Monthly Revenue Pivot Table */}
+      <Card className="print-table-container">
+        <CardHeader className="no-print">
+          <CardTitle className="text-lg">거래처별 월간 세탁 매출 집계표</CardTitle>
+        </CardHeader>
+        <CardContent style={{ padding: '1.5rem', overflowX: 'auto' }}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="print-sticky" style={{ 
+                  minWidth: '150px', 
+                  position: 'sticky', 
+                  left: 0, 
+                  backgroundColor: 'var(--surface-50)', 
+                  zIndex: 10,
+                  boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                  borderRight: '1px solid var(--surface-200)'
+                }}>
+                  거래처명
+                </TableHead>
+                {months.map(m => (
+                  <TableHead key={m} style={{ minWidth: '90px', textAlign: 'right', fontWeight: 'bold' }}>{m}월</TableHead>
+                ))}
+                <TableHead style={{ minWidth: '120px', textAlign: 'right', fontWeight: 'bold', backgroundColor: 'var(--surface-50)' }}>합계</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {accommodations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={14} style={{ textAlign: 'center', color: 'var(--surface-500)' }}>
+                    등록된 거래처가 없습니다.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                accommodations.map(acc => {
+                  const accTotal = months.reduce((sum, m) => sum + (accommodationMonthlyRevenue[acc.id]?.[m] || 0), 0)
+                  return (
+                    <TableRow key={acc.id}>
+                      <TableCell className="font-medium print-sticky" style={{ 
+                        position: 'sticky', 
+                        left: 0, 
+                        backgroundColor: 'white', 
+                        zIndex: 5,
+                        boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                        borderRight: '1px solid var(--surface-200)'
+                      }}>
+                        {acc.name}
+                      </TableCell>
+                      {months.map(m => {
+                        const amt = accommodationMonthlyRevenue[acc.id]?.[m] || 0
+                        return (
+                          <TableCell key={m} style={{ textAlign: 'right' }}>
+                            {amt > 0 ? `${amt.toLocaleString()}원` : '-'}
+                          </TableCell>
+                        )
+                      })}
+                      <TableCell className="font-semibold" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)' }}>
+                        {accTotal.toLocaleString()}원
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+
+              {/* Grand Total Row */}
+              <TableRow style={{ backgroundColor: 'var(--surface-100)', fontWeight: 'bold' }}>
+                <TableCell className="print-sticky" style={{ 
+                  position: 'sticky', 
+                  left: 0, 
+                  backgroundColor: 'var(--surface-100)', 
+                  zIndex: 5,
+                  boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                  borderRight: '1px solid var(--surface-200)'
+                }}>
+                  합계
+                </TableCell>
+                {months.map(m => (
+                  <TableCell key={m} style={{ textAlign: 'right' }}>
+                    {monthlyTotalRevenue[m] > 0 ? `${monthlyTotalRevenue[m].toLocaleString()}원` : '-'}
+                  </TableCell>
+                ))}
+                <TableCell style={{ textAlign: 'right', fontSize: '0.95rem', color: 'var(--primary-600)' }}>
+                  {annualTotalRevenue.toLocaleString()}원
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

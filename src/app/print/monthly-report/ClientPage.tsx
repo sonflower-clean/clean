@@ -28,16 +28,26 @@ type DailyRecord = {
   daily_record_items: RecordItem[]
 }
 
+type CompanyInfo = {
+  name: string
+  business_number: string | null
+  owner_name: string | null
+  phone: string | null
+  address: string | null
+}
+
 export default function ClientPage({
   accommodation,
   items,
   records,
-  month
+  month,
+  companyInfo
 }: {
   accommodation: Accommodation
   items: Item[]
   records: DailyRecord[]
   month: string
+  companyInfo: CompanyInfo
 }) {
   
   useEffect(() => {
@@ -195,11 +205,11 @@ export default function ClientPage({
 
         <div className="info-box">
           <div className="info-title">공급자</div>
-          <div className="info-row"><div className="info-label">상호명:</div><div>153-클린</div></div>
-          <div className="info-row"><div className="info-label">사업자번호:</div><div></div></div>
-          <div className="info-row"><div className="info-label">대표자명:</div><div></div></div>
-          <div className="info-row"><div className="info-label">연락처:</div><div></div></div>
-          <div className="info-row"><div className="info-label">주소:</div><div></div></div>
+          <div className="info-row"><div className="info-label">상호명:</div><div>{companyInfo.name}</div></div>
+          <div className="info-row"><div className="info-label">사업자번호:</div><div>{companyInfo.business_number || ' '}</div></div>
+          <div className="info-row"><div className="info-label">대표자명:</div><div>{companyInfo.owner_name || ' '}</div></div>
+          <div className="info-row"><div className="info-label">연락처:</div><div>{companyInfo.phone || ' '}</div></div>
+          <div className="info-row"><div className="info-label">주소:</div><div>{companyInfo.address || ' '}</div></div>
         </div>
       </div>
 

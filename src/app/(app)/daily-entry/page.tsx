@@ -38,12 +38,28 @@ export default async function DailyEntryPage() {
     .from('accommodation_item_prices')
     .select('*')
 
+  let { data: companyInfo } = await supabase
+    .from('company_info')
+    .select('*')
+    .maybeSingle()
+
+  if (!companyInfo) {
+    companyInfo = {
+      name: '153-클린',
+      business_number: '',
+      owner_name: '',
+      phone: '',
+      address: ''
+    }
+  }
+
   return (
     <ClientPage 
       accommodations={accommodations || []} 
       items={items || []} 
       prices={prices || []} 
       userId={user.id}
+      companyInfo={companyInfo}
     />
   )
 }

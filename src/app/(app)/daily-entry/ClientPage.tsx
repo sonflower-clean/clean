@@ -18,16 +18,26 @@ type Accommodation = {
 type Item = { id: string; name: string }
 type Price = { id: string; accommodation_id: string; item_id: string; price: number }
 
+type CompanyInfo = {
+  name: string
+  business_number: string | null
+  owner_name: string | null
+  phone: string | null
+  address: string | null
+}
+
 export default function ClientPage({ 
   accommodations, 
   items, 
   prices,
-  userId
+  userId,
+  companyInfo
 }: { 
   accommodations: Accommodation[], 
   items: Item[],
   prices: Price[],
-  userId: string
+  userId: string,
+  companyInfo: CompanyInfo
 }) {
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedAcc, setSelectedAcc] = useState<string>('')
@@ -317,11 +327,11 @@ export default function ClientPage({
 
           <div className="print-info-box">
             <div className="print-info-title">공급자</div>
-            <div className="print-info-row"><div className="print-info-label">상호명:</div><div>153-클린</div></div>
-            <div className="print-info-row"><div className="print-info-label">사업자번호:</div><div>-</div></div>
-            <div className="print-info-row"><div className="print-info-label">대표자명:</div><div>-</div></div>
-            <div className="print-info-row"><div className="print-info-label">연락처:</div><div>-</div></div>
-            <div className="print-info-row"><div className="print-info-label">주소:</div><div>-</div></div>
+            <div className="print-info-row"><div className="print-info-label">상호명:</div><div>{companyInfo.name}</div></div>
+            <div className="print-info-row"><div className="print-info-label">사업자번호:</div><div>{companyInfo.business_number || ''}</div></div>
+            <div className="print-info-row"><div className="print-info-label">대표자명:</div><div>{companyInfo.owner_name || ''}</div></div>
+            <div className="print-info-row"><div className="print-info-label">연락처:</div><div>{companyInfo.phone || ''}</div></div>
+            <div className="print-info-row"><div className="print-info-label">주소:</div><div>{companyInfo.address || ''}</div></div>
           </div>
         </div>
 

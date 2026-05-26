@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, Printer } from 'lucide-react'
 
 type Expense = {
   id: string;
@@ -31,11 +31,39 @@ export default function ClientPage({ initialData, userId }: { initialData: Expen
   const [editingItem, setEditingItem] = useState<Expense | null>(null)
   const [todayDate, setTodayDate] = useState('')
 
+  // Filters State
+  const [filterYear, setFilterYear] = useState<string>('all')
+  const [filterMonth, setFilterMonth] = useState<string>('all')
+  const [filterCategory, setFilterCategory] = useState<string>('all')
+
   useEffect(() => {
     setTodayDate(format(new Date(), 'yyyy-MM-dd'))
   }, [])
   
   const supabase = createClient()
+
+  // Generate unique years from data for filter
+  const years = useMemo(() => {
+    const allYears = data.map(item => new Date(item.date).getFullYear())
+    const uniqueYears = Array.from(new Set(allYears)).sort((a, b) => b - a)
+    return uniqueYears.length > 0 ? uniqueYears : [new Date().getFullYear()]
+  }, [data])
+
+  // Filtered Data
+  const filteredData = useMemo(() => {
+    return data.filter(item => {
+      const itemDate = new Date(item.date)
+      const isYearMatch = filterYear === 'all' || itemDate.getFullYear().toString() === filterYear
+      const isMonthMatch = filterMonth === 'all' || (itemDate.getMonth() + 1).toString() === filterMonth
+      const isCategoryMatch = filterCategory === 'all' || item.category === filterCategory
+      return isYearMatch && isMonthMatch && isCategoryMatch
+    })
+  }, [data, filterYear, filterMonth, filterCategory])
+
+  // Calculate sum of filtered items
+  const totalAmount = useMemo(() => {
+    return filteredData.reduce((sum, item) => sum + item.amount, 0)
+  }, [filteredData])
 
   const handleOpenModal = (item?: Expense) => {
     if (item) {
@@ -109,41 +137,142 @@ export default function ClientPage({ initialData, userId }: { initialData: Expen
     }
   }
 
+  const handlePrint = () => {
+    window.print()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Print Specific CSS */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .print-only { display: block !important; }
+          body { background: white; padding: 0; }
+          .content { padding: 0; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd !important; padding: 8px !important; }
+        }
+        .print-only { display: none; }
+      `}</style>
+
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 className="text-2xl font-bold">소모품 및 비용 관리</h1>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus size={16} /> 비용 내역 등록
-        </Button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Button variant="outline" onClick={handlePrint}>
+            <Printer size={16} /> 프린트
+          </Button>
+          <Button onClick={() => handleOpenModal()}>
+            <Plus size={16} /> 비용 내역 등록
+          </Button>
+        </div>
+      </div>
+
+      {/* Print Title (Only visible on print) */}
+      <div className="print-only" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>소모품 및 지출 비용 명세서</h1>
+        <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+          출력일자: {format(new Date(), 'yyyy-MM-dd HH:mm')} | 
+          필터링 조건: {filterYear === 'all' ? '전체 연도' : `${filterYear}년`} {filterMonth === 'all' ? '전체 월' : `${filterMonth}월`} {filterCategory === 'all' ? '전체 카테고리' : CATEGORIES.find(c => c.value === filterCategory)?.label}
+        </p>
+      </div>
+
+      {/* Filters (Hidden on print) */}
+      <div className="no-print" style={{ 
+        display: 'flex', 
+        gap: '1rem', 
+        padding: '1rem', 
+        backgroundColor: 'var(--surface-50)', 
+        borderRadius: 'var(--radius-lg)',
+        flexWrap: 'wrap'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, minWidth: '150px' }}>
+          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--surface-600)' }}>연도 필터</label>
+          <select 
+            value={filterYear}
+            onChange={(e) => setFilterYear(e.target.value)}
+            style={{
+              height: '2.5rem',
+              padding: '0.5rem',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--input-border)',
+              backgroundColor: 'white'
+            }}
+          >
+            <option value="all">전체 연도</option>
+            {years.map(y => (
+              <option key={y} value={y.toString()}>{y}년</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, minWidth: '150px' }}>
+          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--surface-600)' }}>월 필터</label>
+          <select 
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            style={{
+              height: '2.5rem',
+              padding: '0.5rem',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--input-border)',
+              backgroundColor: 'white'
+            }}
+          >
+            <option value="all">전체 월</option>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+              <option key={m} value={m.toString()}>{m}월</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 2, minWidth: '200px' }}>
+          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--surface-600)' }}>카테고리 필터</label>
+          <select 
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            style={{
+              height: '2.5rem',
+              padding: '0.5rem',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--input-border)',
+              backgroundColor: 'white'
+            }}
+          >
+            <option value="all">전체 카테고리</option>
+            {CATEGORIES.map(cat => (
+              <option key={cat.value} value={cat.value}>{cat.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>날짜</TableHead>
-            <TableHead>항목분류</TableHead>
-            <TableHead>내용</TableHead>
-            <TableHead>금액</TableHead>
-            <TableHead>관리</TableHead>
+            <TableHead style={{ width: '15%', textAlign: 'center' }}>날짜</TableHead>
+            <TableHead style={{ width: '25%', textAlign: 'center' }}>항목분류</TableHead>
+            <TableHead style={{ width: '35%', textAlign: 'center' }}>내용</TableHead>
+            <TableHead style={{ width: '15%', textAlign: 'right' }}>금액</TableHead>
+            <TableHead className="no-print" style={{ width: '10%', textAlign: 'center' }}>관리</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.length === 0 ? (
+          {filteredData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} style={{ textAlign: 'center', color: 'var(--surface-500)' }}>
-                등록된 비용 내역이 없습니다.
+              <TableCell colSpan={5} style={{ textAlign: 'center', color: 'var(--surface-500)', padding: '2rem' }}>
+                검색된 비용 내역이 없습니다.
               </TableCell>
             </TableRow>
           ) : (
-            data.map((item) => (
+            filteredData.map((item) => (
               <TableRow key={item.id}>
-                <TableCell>{item.date}</TableCell>
-                <TableCell>{CATEGORIES.find(c => c.value === item.category)?.label || item.category}</TableCell>
+                <TableCell style={{ textAlign: 'center' }}>{item.date}</TableCell>
+                <TableCell style={{ textAlign: 'center' }}>{CATEGORIES.find(c => c.value === item.category)?.label || item.category}</TableCell>
                 <TableCell>{item.description}</TableCell>
-                <TableCell className="font-medium text-danger">{item.amount.toLocaleString()}원</TableCell>
-                <TableCell>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <TableCell className="font-medium text-danger" style={{ textAlign: 'right' }}>{item.amount.toLocaleString()}원</TableCell>
+                <TableCell className="no-print">
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                     <Button variant="ghost" size="sm" onClick={() => handleOpenModal(item)}>
                       <Edit2 size={16} /> 수정
                     </Button>
@@ -154,6 +283,18 @@ export default function ClientPage({ initialData, userId }: { initialData: Expen
                 </TableCell>
               </TableRow>
             ))
+          )}
+          {/* Total Row */}
+          {filteredData.length > 0 && (
+            <TableRow style={{ backgroundColor: 'var(--surface-50)', fontWeight: 'bold' }}>
+              <TableCell style={{ textAlign: 'center' }}>합계</TableCell>
+              <TableCell style={{ textAlign: 'center' }}>{filteredData.length}건</TableCell>
+              <TableCell></TableCell>
+              <TableCell className="text-danger" style={{ textAlign: 'right', fontSize: '1rem' }}>
+                {totalAmount.toLocaleString()}원
+              </TableCell>
+              <TableCell className="no-print"></TableCell>
+            </TableRow>
           )}
         </TableBody>
       </Table>
