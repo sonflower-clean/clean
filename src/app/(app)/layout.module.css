@@ -216,3 +216,29 @@
     display: none;
   }
 }
+
+@media print {
+  .sidebar,
+  .mobileHeader,
+  .backdrop {
+    display: none !important;
+  }
+  
+  .layout {
+    display: block !important;
+    height: auto !important;
+    width: auto !important;
+    overflow: visible !important;
+  }
+  
+  .main {
+    height: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+  }
+  
+  .content {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}

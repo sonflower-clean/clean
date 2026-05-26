@@ -7,7 +7,14 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Printer, Save } from 'lucide-react'
 
-type Accommodation = { id: string; name: string }
+type Accommodation = { 
+  id: string; 
+  name: string;
+  business_number?: string;
+  owner_name?: string;
+  phone?: string;
+  address?: string;
+}
 type Item = { id: string; name: string }
 type Price = { id: string; accommodation_id: string; item_id: string; price: number }
 
@@ -141,7 +148,8 @@ export default function ClientPage({
   }, [selectedAcc, selectedDate])
 
 
-  const selectedAccName = accommodations.find(a => a.id === selectedAcc)?.name || ''
+  const selectedAccObj = accommodations.find(a => a.id === selectedAcc)
+  const selectedAccName = selectedAccObj?.name || ''
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -235,36 +243,140 @@ export default function ClientPage({
       )}
 
       {/* Print View */}
-      <div className="print-only" style={{ padding: '2rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', marginBottom: '2rem' }}>세탁 일지 (납품서)</h1>
+      <div className="print-only" style={{ padding: '1.5rem', backgroundColor: 'white', color: 'black', fontFamily: 'sans-serif' }}>
+        <style dangerouslySetInnerHTML={{__html: `
+          @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; padding: 0; margin: 0; }
+          }
+          .print-title {
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            margin-top: 0;
+          }
+          .print-info-container {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+          }
+          .print-info-box {
+            border: 1px solid #333;
+            padding: 0.5rem;
+            flex: 1;
+          }
+          .print-info-title {
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+            text-align: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.3rem;
+            font-size: 0.85rem;
+            background-color: #f5f5f5;
+          }
+          .print-info-row {
+            display: flex;
+            margin-bottom: 0.15rem;
+            font-size: 0.75rem;
+          }
+          .print-info-label {
+            width: 80px;
+            font-weight: bold;
+          }
+          .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+          }
+          .print-th, .print-td {
+            border: 1px solid #333;
+            padding: 0.5rem;
+            text-align: center;
+          }
+          .print-th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+          }
+        `}} />
+
+        <h1 className="print-title">세탁 일지 (납품서)</h1>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <p><strong>거래처:</strong> {selectedAccName}</p>
-          <p><strong>날짜:</strong> {selectedDate}</p>
+        {/* Supplier & Receiver Info */}
+        <div className="print-info-container">
+          <div className="print-info-box">
+            <div className="print-info-title">공급받는 자</div>
+            <div className="print-info-row"><div className="print-info-label">상호명:</div><div>{selectedAccObj?.name || ''}</div></div>
+            <div className="print-info-row"><div className="print-info-label">사업자번호:</div><div>{selectedAccObj?.business_number || ''}</div></div>
+            <div className="print-info-row"><div className="print-info-label">대표자명:</div><div>{selectedAccObj?.owner_name || ''}</div></div>
+            <div className="print-info-row"><div className="print-info-label">연락처:</div><div>{selectedAccObj?.phone || ''}</div></div>
+            <div className="print-info-row"><div className="print-info-label">주소:</div><div>{selectedAccObj?.address || ''}</div></div>
+          </div>
+
+          <div className="print-info-box">
+            <div className="print-info-title">공급자</div>
+            <div className="print-info-row"><div className="print-info-label">상호명:</div><div>153-클린</div></div>
+            <div className="print-info-row"><div className="print-info-label">사업자번호:</div><div>-</div></div>
+            <div className="print-info-row"><div className="print-info-label">대표자명:</div><div>-</div></div>
+            <div className="print-info-row"><div className="print-info-label">연락처:</div><div>-</div></div>
+            <div className="print-info-row"><div className="print-info-label">주소:</div><div>-</div></div>
+          </div>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid black' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+          <p><strong>납품일자:</strong> {selectedDate}</p>
+        </div>
+
+        {/* Data Table */}
+        <table className="print-table">
           <thead>
             <tr>
-              <th style={{ border: '1px solid black', padding: '0.75rem', backgroundColor: '#f3f4f6' }}>품목</th>
-              <th style={{ border: '1px solid black', padding: '0.75rem', backgroundColor: '#f3f4f6' }}>수량</th>
-              <th style={{ border: '1px solid black', padding: '0.75rem', backgroundColor: '#f3f4f6' }}>비고</th>
+              <th className="print-th" style={{ width: '35%' }}>품목</th>
+              <th className="print-th" style={{ width: '15%' }}>수량</th>
+              <th className="print-th" style={{ width: '20%' }}>단가</th>
+              <th className="print-th" style={{ width: '20%' }}>가격</th>
+              <th className="print-th" style={{ width: '10%' }}>비고</th>
             </tr>
           </thead>
           <tbody>
-            {items.filter(item => (quantities[item.id] || 0) > 0).map(item => (
-              <tr key={item.id}>
-                <td style={{ border: '1px solid black', padding: '0.75rem', textAlign: 'center' }}>{item.name}</td>
-                <td style={{ border: '1px solid black', padding: '0.75rem', textAlign: 'right' }}>{quantities[item.id]}</td>
-                <td style={{ border: '1px solid black', padding: '0.75rem' }}></td>
-              </tr>
-            ))}
+            {items.filter(item => (quantities[item.id] || 0) > 0).map(item => {
+              const qty = quantities[item.id] || 0
+              const unitPrice = prices.find(p => p.accommodation_id === selectedAcc && p.item_id === item.id)?.price || 0
+              const totalPrice = qty * unitPrice
+              return (
+                <tr key={item.id}>
+                  <td className="print-td">{item.name}</td>
+                  <td className="print-td" style={{ textAlign: 'right' }}>{qty.toLocaleString()}개</td>
+                  <td className="print-td" style={{ textAlign: 'right' }}>{unitPrice.toLocaleString()}원</td>
+                  <td className="print-td" style={{ textAlign: 'right', fontWeight: 'bold' }}>{totalPrice.toLocaleString()}원</td>
+                  <td className="print-td"></td>
+                </tr>
+              )
+            })}
+            {/* Grand Total Row */}
+            <tr style={{ fontWeight: 'bold', backgroundColor: '#f9fafb' }}>
+              <td className="print-td">합계</td>
+              <td className="print-td" style={{ textAlign: 'right' }}>
+                {items.reduce((acc, item) => acc + (quantities[item.id] || 0), 0).toLocaleString()}개
+              </td>
+              <td className="print-td" style={{ textAlign: 'right' }}>-</td>
+              <td className="print-td" style={{ textAlign: 'right', color: 'var(--primary-600)' }}>
+                {items.reduce((acc, item) => {
+                  const qty = quantities[item.id] || 0
+                  const unitPrice = prices.find(p => p.accommodation_id === selectedAcc && p.item_id === item.id)?.price || 0
+                  return acc + (qty * unitPrice)
+                }, 0).toLocaleString()}원
+              </td>
+              <td className="print-td"></td>
+            </tr>
           </tbody>
         </table>
 
-        <div style={{ marginTop: '4rem', display: 'flex', justifyContent: 'flex-end', gap: '2rem' }}>
-          <p>인수자:</p>
-          <p>(서명)</p>
+        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '3rem', fontSize: '0.85rem' }}>
+          <p>납품자: 153-클린 (서명)</p>
+          <p>인수자: {selectedAccObj?.owner_name || selectedAccObj?.name || ''} (서명)</p>
         </div>
       </div>
     </div>

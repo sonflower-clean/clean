@@ -24,7 +24,7 @@ export default async function DailyEntryPage() {
   // Fetch necessary data
   const { data: accommodations } = await supabase
     .from('accommodations')
-    .select('id, name')
+    .select('id, name, business_number, owner_name, phone, address')
     .eq('is_active', true)
     .order('name')
 
