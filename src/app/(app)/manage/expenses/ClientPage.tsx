@@ -21,7 +21,8 @@ const CATEGORIES = [
   { value: 'consumables', label: '소모품(세제, 자재 등)' },
   { value: 'maintenance', label: '유지비(전기, 가스, 물 등)' },
   { value: 'repair', label: '수리비(기기수리, 부품 등)' },
-  { value: 'damage', label: '파손대환비(수건, 가운 파손 등)' }
+  { value: 'damage', label: '파손대환비(수건, 가운 파손 등)' },
+  { value: 'other', label: '기타 비용' }
 ]
 
 export default function ClientPage({ initialData, userId }: { initialData: Expense[], userId: string }) {
