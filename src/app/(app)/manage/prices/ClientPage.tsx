@@ -107,7 +107,17 @@ export default function ClientPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead style={{ minWidth: '150px' }}>숙박업소 / 품목</TableHead>
+              <TableHead style={{ 
+                minWidth: '150px',
+                position: 'sticky',
+                left: 0,
+                backgroundColor: 'var(--surface-50)',
+                zIndex: 10,
+                boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                borderRight: '1px solid var(--surface-200)'
+              }}>
+                숙박업소 / 품목
+              </TableHead>
               {items.map(item => (
                 <TableHead key={item.id} style={{ minWidth: '120px', textAlign: 'center' }}>
                   {item.name}
@@ -123,7 +133,16 @@ export default function ClientPage({
             ) : (
               accommodations.map(acc => (
                 <TableRow key={acc.id}>
-                  <TableCell className="font-medium">{acc.name}</TableCell>
+                  <TableCell className="font-medium" style={{ 
+                    position: 'sticky',
+                    left: 0,
+                    backgroundColor: 'white',
+                    zIndex: 5,
+                    boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                    borderRight: '1px solid var(--surface-200)'
+                  }}>
+                    {acc.name}
+                  </TableCell>
                   {items.map(item => (
                     <TableCell key={item.id} style={{ padding: '0.5rem' }}>
                       <input
