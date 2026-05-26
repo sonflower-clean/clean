@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
-import { Printer } from 'lucide-react'
+import { Printer, ChevronDown, ChevronRight } from 'lucide-react'
 
 type Role = 'admin' | 'laundry_manager' | 'accommodation_manager'
 type Accommodation = { id: string; name: string }
@@ -33,6 +33,35 @@ export default function ClientPage({
   const today = new Date()
   const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
   const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonth)
+
+  const [expandedAccs, setExpandedAccs] = useState<Record<string, boolean>>({})
+
+  const toggleExpand = (accId: string) => {
+    setExpandedAccs(prev => ({
+      ...prev,
+      [accId]: !prev[accId]
+    }))
+  }
+
+  const getDailyRowsForAcc = (accId: string) => {
+    const accRecords = records.filter(r => r.accommodation_id === accId && r.date.startsWith(selectedMonth))
+    return accRecords
+      .map(r => {
+        const dayItems: Record<string, number> = {}
+        items.forEach(i => dayItems[i.id] = 0)
+        let revenue = 0
+        r.daily_record_items.forEach(ri => {
+          dayItems[ri.item_id] = ri.quantity
+          revenue += ri.quantity * ri.applied_price
+        })
+        return {
+          date: r.date,
+          items: dayItems,
+          revenue
+        }
+      })
+      .sort((a, b) => a.date.localeCompare(b.date))
+  }
 
   const accOptions = role === 'accommodation_manager' 
     ? accommodations.filter(a => a.id === userAccId)
@@ -253,18 +282,95 @@ export default function ClientPage({
                   const hasData = rowData && Object.values(rowData).some(val => val > 0)
                   if (!hasData) return null
 
+                  const isExpanded = expandedAccs[acc.id]
+                  const dailyRows = isExpanded ? getDailyRowsForAcc(acc.id) : []
+
                   return (
-                    <TableRow key={acc.id}>
-                      <TableCell className="font-medium">{acc.name}</TableCell>
-                      {items.map(item => (
-                        <TableCell key={item.id} style={{ textAlign: 'center' }}>
-                          {rowData[item.id] > 0 ? rowData[item.id].toLocaleString() : '-'}
+                    <Fragment key={acc.id}>
+                      <TableRow 
+                        onClick={() => toggleExpand(acc.id)} 
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <TableCell className="font-medium">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {isExpanded ? (
+                              <ChevronDown size={16} style={{ color: 'var(--surface-400)', flexShrink: 0 }} />
+                            ) : (
+                              <ChevronRight size={16} style={{ color: 'var(--surface-400)', flexShrink: 0 }} />
+                            )}
+                            <span>{acc.name}</span>
+                          </div>
                         </TableCell>
-                      ))}
-                      <TableCell style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                        {rowData.totalRev > 0 ? rowData.totalRev.toLocaleString() + '원' : '-'}
-                      </TableCell>
-                    </TableRow>
+                        {items.map(item => (
+                          <TableCell key={item.id} style={{ textAlign: 'center' }}>
+                            {rowData[item.id] > 0 ? rowData[item.id].toLocaleString() : '-'}
+                          </TableCell>
+                        ))}
+                        <TableCell style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                          {rowData.totalRev > 0 ? rowData.totalRev.toLocaleString() + '원' : '-'}
+                        </TableCell>
+                      </TableRow>
+                      
+                      {isExpanded && (
+                        <TableRow style={{ backgroundColor: 'var(--surface-50)' }}>
+                          <TableCell colSpan={items.length + 2} style={{ padding: '0.75rem 1.25rem' }}>
+                            <div style={{ 
+                              border: '1px solid var(--surface-200)', 
+                              borderRadius: 'var(--radius-md)', 
+                              backgroundColor: 'white', 
+                              padding: '1rem',
+                              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.03)'
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--surface-700)' }}>
+                                  {acc.name} - {selectedMonth} 일별 세탁 수량 상세
+                                </span>
+                              </div>
+                              
+                              {dailyRows.length === 0 ? (
+                                <div style={{ fontSize: '0.85rem', color: 'var(--surface-500)', textAlign: 'center', padding: '1rem' }}>
+                                  선택된 월의 일별 기록이 존재하지 않습니다.
+                                </div>
+                              ) : (
+                                <div style={{ overflowX: 'auto' }}>
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
+                                    <thead>
+                                      <tr style={{ borderBottom: '1px solid var(--surface-200)', backgroundColor: 'var(--surface-50)' }}>
+                                        <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, color: 'var(--surface-600)' }}>일자</th>
+                                        {items.map(item => (
+                                          <th key={item.id} style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 600, color: 'var(--surface-600)' }}>{item.name}</th>
+                                        ))}
+                                        <th style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600, color: 'var(--surface-600)' }}>예상 금액</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {dailyRows.map(dayRec => (
+                                        <tr key={dayRec.date} style={{ borderBottom: '1px solid var(--surface-100)', transition: 'background-color 0.15s' }}>
+                                          <td style={{ padding: '0.5rem', fontWeight: 500, color: 'var(--surface-700)' }}>
+                                            {parseInt(dayRec.date.split('-')[2], 10)}일
+                                          </td>
+                                          {items.map(item => {
+                                            const qty = dayRec.items[item.id] || 0
+                                            return (
+                                              <td key={item.id} style={{ padding: '0.5rem', textAlign: 'center', color: qty > 0 ? 'var(--surface-900)' : 'var(--surface-300)' }}>
+                                                {qty > 0 ? qty.toLocaleString() + '개' : '-'}
+                                              </td>
+                                            )
+                                          })}
+                                          <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600, color: 'var(--primary-600)' }}>
+                                            {dayRec.revenue > 0 ? dayRec.revenue.toLocaleString() + '원' : '-'}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
                   )
                 })}
                 {/* Total Row */}
