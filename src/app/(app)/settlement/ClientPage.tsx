@@ -164,17 +164,37 @@ export default function ClientPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Hide elements on print */}
+      {/* Print Specific CSS */}
       <style>{`
         @media print {
+          @page {
+            size: landscape;
+            margin: 10mm;
+          }
           .no-print { display: none !important; }
           .print-only { display: block !important; }
-          body { background: white; padding: 0; }
+          body { background: white; padding: 0; color: black; }
           .content { padding: 0; }
-          .print-table-container { overflow: visible !important; }
-          table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
-          th, td { border: 1px solid #333 !important; padding: 6px !important; font-size: 0.75rem !important; }
-          .print-sticky { position: static !important; background: transparent !important; border: 1px solid #333 !important; box-shadow: none !important; }
+          .print-table-container { overflow: visible !important; width: 100% !important; }
+          table { 
+            width: 100% !important; 
+            border-collapse: collapse !important; 
+            table-layout: fixed !important;
+            page-break-inside: avoid; 
+          }
+          th, td { 
+            border: 1px solid #333 !important; 
+            padding: 4px 2px !important; 
+            font-size: 8px !important; 
+            word-break: break-all !important;
+            white-space: normal !important;
+          }
+          .print-sticky { 
+            position: static !important; 
+            background: transparent !important; 
+            border: 1px solid #333 !important; 
+            box-shadow: none !important; 
+          }
         }
         .print-only { display: none; }
       `}</style>
@@ -294,14 +314,14 @@ export default function ClientPage({
           <CardTitle className="text-lg">월별 종합 결산표</CardTitle>
         </CardHeader>
         <CardContent style={{ padding: '1.5rem', overflowX: 'auto' }}>
-          <Table>
+          <Table style={{ tableLayout: 'fixed', width: '100%' }}>
             <TableHeader>
               <TableRow>
-                <TableHead style={{ minWidth: '100px', textAlign: 'center', fontWeight: 'bold' }}>구분</TableHead>
+                <TableHead style={{ width: '12%', minWidth: '80px', textAlign: 'center', fontWeight: 'bold' }}>구분</TableHead>
                 {months.map(m => (
-                  <TableHead key={m} style={{ minWidth: '80px', textAlign: 'right', fontWeight: 'bold' }}>{m}월</TableHead>
+                  <TableHead key={m} style={{ width: '6.5%', minWidth: '55px', textAlign: 'right', fontWeight: 'bold' }}>{m}월</TableHead>
                 ))}
-                <TableHead style={{ minWidth: '110px', textAlign: 'right', fontWeight: 'bold', backgroundColor: 'var(--surface-50)' }}>합계</TableHead>
+                <TableHead style={{ width: '10%', minWidth: '90px', textAlign: 'right', fontWeight: 'bold', backgroundColor: 'var(--surface-50)' }}>합계</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -309,11 +329,11 @@ export default function ClientPage({
               <TableRow>
                 <TableCell style={{ textAlign: 'center', fontWeight: 600 }}>매출액 (A)</TableCell>
                 {months.map(m => (
-                  <TableCell key={m} className="text-primary" style={{ textAlign: 'right' }}>
+                  <TableCell key={m} className="text-primary" style={{ textAlign: 'right', padding: '6px 4px' }}>
                     {monthlyTotalRevenue[m] > 0 ? `${monthlyTotalRevenue[m].toLocaleString()}원` : '-'}
                   </TableCell>
                 ))}
-                <TableCell className="font-bold text-primary" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)' }}>
+                <TableCell className="font-bold text-primary" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)', padding: '6px 4px' }}>
                   {annualTotalRevenue.toLocaleString()}원
                 </TableCell>
               </TableRow>
@@ -322,11 +342,11 @@ export default function ClientPage({
               <TableRow>
                 <TableCell style={{ textAlign: 'center', fontWeight: 600 }}>지출비용 (B)</TableCell>
                 {months.map(m => (
-                  <TableCell key={m} className="text-danger" style={{ textAlign: 'right' }}>
+                  <TableCell key={m} className="text-danger" style={{ textAlign: 'right', padding: '6px 4px' }}>
                     {monthlyTotalExpenses[m] > 0 ? `${monthlyTotalExpenses[m].toLocaleString()}원` : '-'}
                   </TableCell>
                 ))}
-                <TableCell className="font-bold text-danger" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)' }}>
+                <TableCell className="font-bold text-danger" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)', padding: '6px 4px' }}>
                   {annualTotalExpenses.toLocaleString()}원
                 </TableCell>
               </TableRow>
@@ -337,12 +357,12 @@ export default function ClientPage({
                 {months.map(m => {
                   const profit = monthlyNetProfit[m]
                   return (
-                    <TableCell key={m} className={profit >= 0 ? 'text-success' : 'text-danger'} style={{ textAlign: 'right' }}>
+                    <TableCell key={m} className={profit >= 0 ? 'text-success' : 'text-danger'} style={{ textAlign: 'right', padding: '6px 4px' }}>
                       {profit !== 0 ? `${profit.toLocaleString()}원` : '-'}
                     </TableCell>
                   )
                 })}
-                <TableCell className={annualNetProfit >= 0 ? 'text-success' : 'text-danger'} style={{ textAlign: 'right', fontSize: '0.95rem' }}>
+                <TableCell className={annualNetProfit >= 0 ? 'text-success' : 'text-danger'} style={{ textAlign: 'right', fontSize: '0.95rem', padding: '6px 4px' }}>
                   {annualNetProfit.toLocaleString()}원
                 </TableCell>
               </TableRow>
@@ -357,11 +377,12 @@ export default function ClientPage({
           <CardTitle className="text-lg">거래처별 월간 세탁 매출 집계표</CardTitle>
         </CardHeader>
         <CardContent style={{ padding: '1.5rem', overflowX: 'auto' }}>
-          <Table>
+          <Table style={{ tableLayout: 'fixed', width: '100%' }}>
             <TableHeader>
               <TableRow>
                 <TableHead className="print-sticky" style={{ 
-                  minWidth: '150px', 
+                  width: '12%',
+                  minWidth: '120px', 
                   position: 'sticky', 
                   left: 0, 
                   backgroundColor: 'var(--surface-50)', 
@@ -372,9 +393,9 @@ export default function ClientPage({
                   거래처명
                 </TableHead>
                 {months.map(m => (
-                  <TableHead key={m} style={{ minWidth: '90px', textAlign: 'right', fontWeight: 'bold' }}>{m}월</TableHead>
+                  <TableHead key={m} style={{ width: '6.5%', minWidth: '65px', textAlign: 'right', fontWeight: 'bold' }}>{m}월</TableHead>
                 ))}
-                <TableHead style={{ minWidth: '120px', textAlign: 'right', fontWeight: 'bold', backgroundColor: 'var(--surface-50)' }}>합계</TableHead>
+                <TableHead style={{ width: '10%', minWidth: '90px', textAlign: 'right', fontWeight: 'bold', backgroundColor: 'var(--surface-50)' }}>합계</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -395,19 +416,20 @@ export default function ClientPage({
                         backgroundColor: 'white', 
                         zIndex: 5,
                         boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
-                        borderRight: '1px solid var(--surface-200)'
+                        borderRight: '1px solid var(--surface-200)',
+                        wordBreak: 'break-all'
                       }}>
                         {acc.name}
                       </TableCell>
                       {months.map(m => {
                         const amt = accommodationMonthlyRevenue[acc.id]?.[m] || 0
                         return (
-                          <TableCell key={m} style={{ textAlign: 'right' }}>
+                          <TableCell key={m} style={{ textAlign: 'right', padding: '6px 4px' }}>
                             {amt > 0 ? `${amt.toLocaleString()}원` : '-'}
                           </TableCell>
                         )
                       })}
-                      <TableCell className="font-semibold" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)' }}>
+                      <TableCell className="font-semibold" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)', padding: '6px 4px' }}>
                         {accTotal.toLocaleString()}원
                       </TableCell>
                     </TableRow>
@@ -428,11 +450,11 @@ export default function ClientPage({
                   합계
                 </TableCell>
                 {months.map(m => (
-                  <TableCell key={m} style={{ textAlign: 'right' }}>
+                  <TableCell key={m} style={{ textAlign: 'right', padding: '6px 4px' }}>
                     {monthlyTotalRevenue[m] > 0 ? `${monthlyTotalRevenue[m].toLocaleString()}원` : '-'}
                   </TableCell>
                 ))}
-                <TableCell style={{ textAlign: 'right', fontSize: '0.95rem', color: 'var(--primary-600)' }}>
+                <TableCell style={{ textAlign: 'right', fontSize: '0.95rem', color: 'var(--primary-600)', padding: '6px 4px' }}>
                   {annualTotalRevenue.toLocaleString()}원
                 </TableCell>
               </TableRow>
