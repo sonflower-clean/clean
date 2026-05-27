@@ -228,7 +228,9 @@ export default function ClientPage({
 
         <Card>
           <CardHeader style={{ paddingBottom: '0.5rem' }}>
-            <CardTitle className="text-sm font-medium" style={{ color: 'var(--surface-500)' }}>월간 예상 매출액</CardTitle>
+            <CardTitle className="text-sm font-medium" style={{ color: 'var(--surface-500)' }}>
+              {role === 'accommodation_manager' ? '월간 예상 비용' : '월간 예상 매출액'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalRevenue.toLocaleString()}원</div>
@@ -262,18 +264,24 @@ export default function ClientPage({
       {/* Cross-tab Table (Pivot) */}
       <Card>
         <CardHeader>
-          <CardTitle>거래처별 세탁 품목 집계표 ({selectedMonth})</CardTitle>
+          <CardTitle>
+            {role === 'accommodation_manager' ? '세탁 품목 집계표' : '거래처별 세탁 품목 집계표'} ({selectedMonth})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div style={{ overflowX: 'auto' }}>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead style={{ minWidth: '150px' }}>숙박업소</TableHead>
+                  <TableHead style={{ minWidth: '150px' }}>
+                    {role === 'accommodation_manager' ? '숙박업소명' : '숙박업소'}
+                  </TableHead>
                   {items.map(item => (
                     <TableHead key={item.id} style={{ textAlign: 'center' }}>{item.name}</TableHead>
                   ))}
-                  <TableHead style={{ textAlign: 'right' }}>예상 매출액</TableHead>
+                  <TableHead style={{ textAlign: 'right' }}>
+                    {role === 'accommodation_manager' ? '예상 비용' : '예상 매출액'}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
