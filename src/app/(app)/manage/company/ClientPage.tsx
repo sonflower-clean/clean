@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Store, Save } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 type CompanyInfo = {
   id: string
@@ -25,6 +26,7 @@ export default function ClientPage({ companyInfo }: { companyInfo: CompanyInfo }
   
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,6 +61,7 @@ export default function ClientPage({ companyInfo }: { companyInfo: CompanyInfo }
       if (error) throw error
 
       alert('회사 정보가 안전하게 저장되었습니다.')
+      router.refresh()
     } catch (err: any) {
       console.error(err)
       alert(`저장 중 오류가 발생했습니다: ${err.message}`)

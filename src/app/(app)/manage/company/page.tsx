@@ -21,11 +21,14 @@ export default async function CompanyInfoPage() {
     redirect('/dashboard')
   }
 
-  // Fetch company info singleton
-  let { data: companyInfo } = await supabase
+  // Fetch company info singleton (take latest row to prevent maybeSingle() errors if duplicates occur)
+  const { data: companyInfoRows } = await supabase
     .from('company_info')
     .select('*')
-    .maybeSingle()
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  let companyInfo = companyInfoRows?.[0] || null
 
   // If table was created but has no rows yet, insert the default '153-클린' row
   if (!companyInfo) {
@@ -34,9 +37,8 @@ export default async function CompanyInfoPage() {
         .from('company_info')
         .insert({ name: '153-클린' })
         .select()
-        .single()
-      if (!error && inserted) {
-        companyInfo = inserted
+      if (!error && inserted?.[0]) {
+        companyInfo = inserted[0]
       }
     } catch (e) {
       console.error('Could not initialize company_info row:', e)
@@ -54,6 +56,6 @@ export default async function CompanyInfoPage() {
   }
 
   return (
-    <ClientPage companyInfo={fallbackInfo} />
+    <ClientPage key={fallbackInfo.id || 'company-info'} companyInfo={fallbackInfo} />
   )
 }

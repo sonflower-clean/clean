@@ -60,20 +60,19 @@ export default async function PrintMonthlyReportPage({
     .gte('date', startDate)
     .lte('date', endDate)
 
-  // Fetch Company Info details
-  let { data: companyInfo } = await supabase
+  // Fetch Company Info details (bypass maybeSingle error)
+  const { data: companyInfoRows } = await supabase
     .from('company_info')
     .select('*')
-    .maybeSingle()
+    .order('created_at', { ascending: false })
+    .limit(1)
 
-  if (!companyInfo) {
-    companyInfo = {
-      name: '153-클린',
-      business_number: '',
-      owner_name: '',
-      phone: '',
-      address: ''
-    }
+  let companyInfo = companyInfoRows?.[0] || {
+    name: '153-클린',
+    business_number: '',
+    owner_name: '',
+    phone: '',
+    address: ''
   }
 
   return (

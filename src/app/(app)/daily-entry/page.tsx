@@ -38,19 +38,18 @@ export default async function DailyEntryPage() {
     .from('accommodation_item_prices')
     .select('*')
 
-  let { data: companyInfo } = await supabase
+  const { data: companyInfoRows } = await supabase
     .from('company_info')
     .select('*')
-    .maybeSingle()
+    .order('created_at', { ascending: false })
+    .limit(1)
 
-  if (!companyInfo) {
-    companyInfo = {
-      name: '153-클린',
-      business_number: '',
-      owner_name: '',
-      phone: '',
-      address: ''
-    }
+  let companyInfo = companyInfoRows?.[0] || {
+    name: '153-클린',
+    business_number: '',
+    owner_name: '',
+    phone: '',
+    address: ''
   }
 
   return (
