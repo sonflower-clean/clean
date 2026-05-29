@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default async function SettlementPage() {
+export default async function PerformancePage() {
   const supabase = await createClient()
   
-  // Verify access (admin only)
+  // Verify access (admin & laundry_manager)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -17,7 +17,7 @@ export default async function SettlementPage() {
     .eq('id', user.id)
     .single()
     
-  if (profile?.role !== 'admin') {
+  if (profile?.role !== 'admin' && profile?.role !== 'laundry_manager') {
     redirect('/dashboard')
   }
 
@@ -28,6 +28,12 @@ export default async function SettlementPage() {
     .eq('is_active', true)
     .order('name')
 
+  // Fetch laundry items
+  const { data: items } = await supabase
+    .from('items')
+    .select('id, name, unit')
+    .order('name')
+
   // Fetch daily records with items
   const { data: records } = await supabase
     .from('daily_records')
@@ -36,21 +42,16 @@ export default async function SettlementPage() {
       date,
       accommodation_id,
       daily_record_items (
-        quantity,
-        applied_price
+        item_id,
+        quantity
       )
     `)
-
-  // Fetch expenses
-  const { data: expenses } = await supabase
-    .from('expenses')
-    .select('id, date, amount, category')
 
   return (
     <ClientPage 
       accommodations={accommodations || []} 
+      items={items || []} 
       records={records || []} 
-      expenses={expenses || []}
     />
   )
 }

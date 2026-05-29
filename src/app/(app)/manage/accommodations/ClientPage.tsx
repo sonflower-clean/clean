@@ -115,6 +115,7 @@ export default function ClientPage({ initialData }: { initialData: Accommodation
             <TableHead>업체명</TableHead>
             <TableHead>대표자</TableHead>
             <TableHead>연락처</TableHead>
+            <TableHead style={{ width: '25%' }}>주소</TableHead>
             <TableHead>상태</TableHead>
             <TableHead>관리</TableHead>
           </TableRow>
@@ -122,7 +123,7 @@ export default function ClientPage({ initialData }: { initialData: Accommodation
         <TableBody>
           {data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} style={{ textAlign: 'center', color: 'var(--surface-500)' }}>
+              <TableCell colSpan={6} style={{ textAlign: 'center', color: 'var(--surface-500)' }}>
                 등록된 업체가 없습니다.
               </TableCell>
             </TableRow>
@@ -132,6 +133,7 @@ export default function ClientPage({ initialData }: { initialData: Accommodation
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>{item.owner_name}</TableCell>
                 <TableCell>{item.phone}</TableCell>
+                <TableCell style={{ fontSize: '0.85rem', color: 'var(--surface-600)' }}>{item.address || '-'}</TableCell>
                 <TableCell>
                   <span style={{ 
                     padding: '0.25rem 0.5rem', 

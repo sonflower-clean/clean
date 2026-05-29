@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Calculator,
-  Settings
+  Settings,
+  BarChart2
 } from 'lucide-react'
 import styles from './layout.module.css'
 
@@ -41,6 +42,7 @@ export default function Sidebar({ profile, email }: SidebarProps) {
     { label: '세탁 품목 관리', href: '/manage/items', icon: Package, roles: ['admin'] },
     { label: '단가 관리', href: '/manage/prices', icon: DollarSign, roles: ['admin'] },
     { label: '소모품 및 비용 관리', href: '/manage/expenses', icon: CreditCard, roles: ['admin'] },
+    { label: '거래처별 세탁 실적', href: '/performance', icon: BarChart2, roles: ['admin', 'laundry_manager'] },
     { label: '결산', href: '/settlement', icon: Calculator, roles: ['admin'] },
     { label: '회사 정보 관리', href: '/manage/company', icon: Settings, roles: ['admin'] },
     { label: '계정 관리', href: '/manage/users', icon: Users, roles: ['admin'] },

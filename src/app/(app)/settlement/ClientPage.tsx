@@ -13,7 +13,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  LabelList
 } from 'recharts'
 import { format } from 'date-fns'
 
@@ -38,6 +39,7 @@ type Expense = {
   id: string
   date: string
   amount: number
+  category: string
 }
 
 export default function ClientPage({
@@ -127,6 +129,44 @@ export default function ClientPage({
 
     return expMap
   }, [yearExpenses])
+
+  // Extract unique expense categories
+  const expenseCategories = useMemo(() => {
+    const cats = yearExpenses.map(e => e.category || '기타 비용')
+    return Array.from(new Set(cats)).sort()
+  }, [yearExpenses])
+
+  // Calculate monthly expenses by category: category -> month -> amount
+  const monthlyExpensesByCategory = useMemo(() => {
+    const catMap: Record<string, Record<number, number>> = {}
+    
+    expenseCategories.forEach(cat => {
+      catMap[cat] = {}
+      months.forEach(m => {
+        catMap[cat][m] = 0
+      })
+    })
+
+    yearExpenses.forEach(e => {
+      const dateObj = new Date(e.date)
+      const month = dateObj.getMonth() + 1
+      const cat = e.category || '기타 비용'
+      if (catMap[cat] && catMap[cat][month] !== undefined) {
+        catMap[cat][month] += e.amount
+      }
+    })
+
+    return catMap
+  }, [yearExpenses, expenseCategories])
+
+  // Calculate annual expenses by category: category -> totalAmount
+  const annualExpensesByCategory = useMemo(() => {
+    const totals: Record<string, number> = {}
+    expenseCategories.forEach(cat => {
+      totals[cat] = months.reduce((sum, m) => sum + (monthlyExpensesByCategory[cat]?.[m] || 0), 0)
+    })
+    return totals
+  }, [monthlyExpensesByCategory, expenseCategories])
 
   // Monthly Net Profit: month -> amount
   const monthlyNetProfit = useMemo(() => {
@@ -282,7 +322,7 @@ export default function ClientPage({
         </Card>
       </div>
 
-      {/* Chart (Screen only) */}
+      {/* Chart (Screen and Print versions) */}
       <div className="no-print">
         <Card>
           <CardHeader>
@@ -292,20 +332,85 @@ export default function ClientPage({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 25, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis tickFormatter={(val) => `${(val / 10000).toLocaleString()}만`} />
                 <Tooltip formatter={(value: any) => [`${value.toLocaleString()}원`]} />
                 <Legend />
-                <Bar dataKey="매출액" fill="#0066cc" />
-                <Bar dataKey="지출비용" fill="#ef4444" />
-                <Bar dataKey="순이익" fill="#10b981" />
+                <Bar dataKey="매출액" fill="#0066cc">
+                  <LabelList 
+                    dataKey="매출액" 
+                    position="top" 
+                    formatter={(val: any) => val && Number(val) > 0 ? `${(Number(val) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}만` : ''} 
+                    style={{ fontSize: '9px', fill: '#0066cc', fontWeight: 'bold' }} 
+                  />
+                </Bar>
+                <Bar dataKey="지출비용" fill="#ef4444">
+                  <LabelList 
+                    dataKey="지출비용" 
+                    position="top" 
+                    formatter={(val: any) => val && Number(val) > 0 ? `${(Number(val) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}만` : ''} 
+                    style={{ fontSize: '9px', fill: '#ef4444', fontWeight: 'bold' }} 
+                  />
+                </Bar>
+                <Bar dataKey="순이익" fill="#10b981">
+                  <LabelList 
+                    dataKey="순이익" 
+                    position="top" 
+                    formatter={(val: any) => val && Number(val) > 0 ? `${(Number(val) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}만` : ''} 
+                    style={{ fontSize: '9px', fill: '#10b981', fontWeight: 'bold' }} 
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Print-only fixed-size Chart to ensure it prints perfectly without collapsing */}
+      <div className="print-only" style={{ margin: '1rem 0 2rem 0', pageBreakInside: 'avoid' }}>
+        <h3 style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center' }}>
+          월별 세탁 손익 추이 ({selectedYear}년)
+        </h3>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <BarChart
+            width={780}
+            height={220}
+            data={chartData}
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            style={{ fontSize: '9px' }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis tickFormatter={(val) => `${(val / 10000).toLocaleString()}만`} />
+            <Bar dataKey="매출액" fill="#0066cc">
+              <LabelList 
+                dataKey="매출액" 
+                position="top" 
+                formatter={(val: any) => val && Number(val) > 0 ? `${(Number(val) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}만` : ''} 
+                style={{ fontSize: '7px', fill: '#0066cc', fontWeight: 'bold' }} 
+              />
+            </Bar>
+            <Bar dataKey="지출비용" fill="#ef4444">
+              <LabelList 
+                dataKey="지출비용" 
+                position="top" 
+                formatter={(val: any) => val && Number(val) > 0 ? `${(Number(val) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}만` : ''} 
+                style={{ fontSize: '7px', fill: '#ef4444', fontWeight: 'bold' }} 
+              />
+            </Bar>
+            <Bar dataKey="순이익" fill="#10b981">
+              <LabelList 
+                dataKey="순이익" 
+                position="top" 
+                formatter={(val: any) => val && Number(val) > 0 ? `${(Number(val) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}만` : ''} 
+                style={{ fontSize: '7px', fill: '#10b981', fontWeight: 'bold' }} 
+              />
+            </Bar>
+          </BarChart>
+        </div>
       </div>
 
       {/* Table 1: Monthly Financial Summary */}
@@ -339,7 +444,7 @@ export default function ClientPage({
               </TableRow>
 
               {/* Expenses */}
-              <TableRow>
+              <TableRow style={{ backgroundColor: 'var(--surface-50)', fontWeight: 'bold' }}>
                 <TableCell style={{ textAlign: 'center', fontWeight: 600 }}>지출비용 (B)</TableCell>
                 {months.map(m => (
                   <TableCell key={m} className="text-danger" style={{ textAlign: 'right', padding: '6px 4px' }}>
@@ -350,6 +455,26 @@ export default function ClientPage({
                   {annualTotalExpenses.toLocaleString()}원
                 </TableCell>
               </TableRow>
+
+              {/* Expense Category Breakdown Sub-rows */}
+              {expenseCategories.map(cat => (
+                <TableRow key={cat} style={{ fontSize: '0.8rem', color: 'var(--surface-600)' }}>
+                  <TableCell style={{ paddingLeft: '1.5rem', color: 'var(--surface-500)', fontStyle: 'italic' }}>
+                    └ {cat}
+                  </TableCell>
+                  {months.map(m => {
+                    const amt = monthlyExpensesByCategory[cat]?.[m] || 0
+                    return (
+                      <TableCell key={m} style={{ textAlign: 'right', padding: '4px 4px', color: 'var(--surface-600)' }}>
+                        {amt > 0 ? `${amt.toLocaleString()}원` : '-'}
+                      </TableCell>
+                    )
+                  })}
+                  <TableCell style={{ textAlign: 'right', padding: '4px 4px', fontWeight: 500, backgroundColor: 'var(--surface-50)', color: 'var(--surface-700)' }}>
+                    {annualExpensesByCategory[cat] > 0 ? `${annualExpensesByCategory[cat].toLocaleString()}원` : '-'}
+                  </TableCell>
+                </TableRow>
+              ))}
 
               {/* Net Profit */}
               <TableRow style={{ backgroundColor: 'var(--success-50)', fontWeight: 'bold' }}>

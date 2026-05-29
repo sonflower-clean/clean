@@ -137,6 +137,23 @@ export default function ClientPage({
           border: 1px solid #333;
           padding: 0.5rem;
           flex: 1;
+          position: relative;
+        }
+        .stamp-box {
+          position: absolute;
+          right: 8px;
+          bottom: 8px;
+          width: 44px;
+          height: 44px;
+          border: 1px dashed #bbb;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #bbb;
+          font-size: 10px;
+          font-weight: 500;
+          background: transparent;
         }
         .info-title {
           font-weight: bold;
@@ -210,6 +227,7 @@ export default function ClientPage({
           <div className="info-row"><div className="info-label">대표자명:</div><div>{companyInfo.owner_name || ' '}</div></div>
           <div className="info-row"><div className="info-label">연락처:</div><div>{companyInfo.phone || ' '}</div></div>
           <div className="info-row"><div className="info-label">주소:</div><div>{companyInfo.address || ' '}</div></div>
+          <div className="stamp-box">직인</div>
         </div>
       </div>
 

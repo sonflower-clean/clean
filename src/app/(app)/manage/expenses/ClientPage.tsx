@@ -7,7 +7,19 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Plus, Edit2, Trash2, Printer } from 'lucide-react'
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Cell,
+  LabelList 
+} from 'recharts'
 
 type Expense = {
   id: string;
@@ -64,6 +76,35 @@ export default function ClientPage({ initialData, userId }: { initialData: Expen
   const totalAmount = useMemo(() => {
     return filteredData.reduce((sum, item) => sum + item.amount, 0)
   }, [filteredData])
+
+  // Calculate summary of expenses by category based on filteredData
+  const categorySummary = useMemo(() => {
+    const summaryMap: Record<string, { count: number; total: number }> = {}
+    
+    // Initialize all categories to 0 so they always show in the table/chart even if empty
+    CATEGORIES.forEach(cat => {
+      summaryMap[cat.value] = { count: 0, total: 0 }
+    })
+
+    // Accumulate actual data
+    filteredData.forEach(item => {
+      const catKey = item.category || 'other'
+      if (!summaryMap[catKey]) {
+        summaryMap[catKey] = { count: 0, total: 0 }
+      }
+      summaryMap[catKey].count += 1
+      summaryMap[catKey].total += item.amount
+    })
+
+    // Convert map to formatted array
+    return CATEGORIES.map(cat => ({
+      key: cat.value,
+      label: cat.label.split('(')[0], // Cleaner category name without brackets for the chart
+      count: summaryMap[cat.value].count,
+      total: summaryMap[cat.value].total,
+      percentage: totalAmount > 0 ? (summaryMap[cat.value].total / totalAmount) * 100 : 0
+    }))
+  }, [filteredData, totalAmount])
 
   const handleOpenModal = (item?: Expense) => {
     if (item) {
@@ -245,6 +286,93 @@ export default function ClientPage({ initialData, userId }: { initialData: Expen
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Category Summary Dashboard (Hidden on print) */}
+      <div className="no-print" style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+        gap: '1.5rem',
+        marginTop: '0.5rem',
+        marginBottom: '1rem'
+      }}>
+        {/* Category Summary Table */}
+        <Card>
+          <CardHeader style={{ paddingBottom: '0.5rem' }}>
+            <CardTitle className="text-base font-bold">카테고리별 비용 합계</CardTitle>
+          </CardHeader>
+          <CardContent style={{ padding: '0 1rem 1rem 1rem' }}>
+            <Table style={{ fontSize: '0.85rem' }}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead style={{ fontWeight: 'bold', padding: '6px 4px' }}>카테고리</TableHead>
+                  <TableHead style={{ textAlign: 'center', fontWeight: 'bold', width: '60px', padding: '6px 4px' }}>건수</TableHead>
+                  <TableHead style={{ textAlign: 'right', fontWeight: 'bold', padding: '6px 4px' }}>총 비용</TableHead>
+                  <TableHead style={{ textAlign: 'right', fontWeight: 'bold', width: '70px', padding: '6px 4px' }}>비율</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categorySummary.map(item => (
+                  <TableRow key={item.key}>
+                    <TableCell style={{ fontWeight: 500, padding: '8px 4px' }}>{CATEGORIES.find(c => c.value === item.key)?.label.split('(')[0]}</TableCell>
+                    <TableCell style={{ textAlign: 'center', padding: '8px 4px' }}>{item.count}건</TableCell>
+                    <TableCell style={{ textAlign: 'right', fontWeight: 600, padding: '8px 4px' }}>{item.total.toLocaleString()}원</TableCell>
+                    <TableCell style={{ textAlign: 'right', color: 'var(--surface-500)', padding: '8px 4px' }}>{item.percentage.toFixed(1)}%</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow style={{ fontWeight: 'bold', backgroundColor: 'var(--surface-50)' }}>
+                  <TableCell style={{ padding: '8px 4px' }}>합계</TableCell>
+                  <TableCell style={{ textAlign: 'center', padding: '8px 4px' }}>{filteredData.length}건</TableCell>
+                  <TableCell style={{ textAlign: 'right', color: 'var(--primary-600)', padding: '8px 4px' }}>{totalAmount.toLocaleString()}원</TableCell>
+                  <TableCell style={{ textAlign: 'right', padding: '8px 4px' }}>100%</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Category Summary Chart */}
+        <Card>
+          <CardHeader style={{ paddingBottom: '0.5rem' }}>
+            <CardTitle className="text-base font-bold">지출 비중 시각화</CardTitle>
+          </CardHeader>
+          <CardContent style={{ height: '240px', padding: '0.5rem 1rem 1rem 1rem' }}>
+            {totalAmount > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  layout="vertical"
+                  data={categorySummary.filter(c => c.total > 0)}
+                  margin={{ top: 10, right: 40, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" tickFormatter={(val) => `${(val / 10000).toLocaleString()}만`} />
+                  <YAxis type="category" dataKey="label" width={75} style={{ fontSize: '10px', fontWeight: 500 }} />
+                  <Tooltip formatter={(value: any) => [`${value.toLocaleString()}원`]} />
+                  <Bar dataKey="total" fill="var(--primary-500)" radius={[0, 4, 4, 0]}>
+                    <LabelList 
+                      dataKey="total" 
+                      position="right" 
+                      formatter={(val: any) => val ? `${(Number(val) / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}만` : ''} 
+                      style={{ fontSize: '9px', fill: 'var(--surface-700)', fontWeight: 'bold' }} 
+                    />
+                    {categorySummary.filter(c => c.total > 0).map((entry, index) => {
+                      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--surface-400)', fontSize: '0.875rem' }}>
+                표시할 지출 내역이 없습니다.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+        <h2 className="text-lg font-bold">지출 상세 내역</h2>
       </div>
 
       <Table>
