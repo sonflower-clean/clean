@@ -44,16 +44,19 @@ export default function ClientPage({ accommodations, items, records }: ClientPag
 
   // Generate unique years from records or fallback to current/prev years
   const availableYears = useMemo(() => {
-    const years = records.map(r => new Date(r.date).getFullYear())
-    const unique = Array.from(new Set(years)).sort((a, b) => b - a)
-    return unique.length > 0 ? unique.map(String) : [new Date().getFullYear().toString()]
+    const years = records.map(r => {
+      const parts = r.date.split('-')
+      return parts[0]
+    }).filter(Boolean)
+    const unique = Array.from(new Set(years)).sort((a, b) => b.localeCompare(a))
+    return unique.length > 0 ? unique : [new Date().getFullYear().toString()]
   }, [records])
 
   // Filter records based on selected year and accommodation
   const filteredRecords = useMemo(() => {
     return records.filter(rec => {
-      const recDate = new Date(rec.date)
-      const isYearMatch = recDate.getFullYear().toString() === selectedYear
+      const parts = rec.date.split('-')
+      const isYearMatch = parts[0] === selectedYear
       const isAccMatch = selectedAcc === 'all' || rec.accommodation_id === selectedAcc
       return isYearMatch && isAccMatch
     })
@@ -89,9 +92,9 @@ export default function ClientPage({ accommodations, items, records }: ClientPag
 
     // Populate actual records quantity
     filteredRecords.forEach(rec => {
-      const recDate = new Date(rec.date)
-      const month = recDate.getMonth() + 1
-      const day = recDate.getDate()
+      const parts = rec.date.split('-')
+      const month = parseInt(parts[1], 10)
+      const day = parseInt(parts[2], 10)
 
       if (selectedMonth === 'all') {
         // Monthly pivot
@@ -123,7 +126,7 @@ export default function ClientPage({ accommodations, items, records }: ClientPag
         values: colValues,
         total: rowSum
       }
-    }).filter(row => row.total > 0 || selectedMonth !== 'all') // Hide items with 0 total in annual view to keep table clean
+    })
 
     // Calculate column totals
     const colSums: Record<number, number> = {}

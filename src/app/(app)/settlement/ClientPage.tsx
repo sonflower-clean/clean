@@ -456,26 +456,6 @@ export default function ClientPage({
                 </TableCell>
               </TableRow>
 
-              {/* Expense Category Breakdown Sub-rows */}
-              {expenseCategories.map(cat => (
-                <TableRow key={cat} style={{ fontSize: '0.8rem', color: 'var(--surface-600)' }}>
-                  <TableCell style={{ paddingLeft: '1.5rem', color: 'var(--surface-500)', fontStyle: 'italic' }}>
-                    └ {cat}
-                  </TableCell>
-                  {months.map(m => {
-                    const amt = monthlyExpensesByCategory[cat]?.[m] || 0
-                    return (
-                      <TableCell key={m} style={{ textAlign: 'right', padding: '4px 4px', color: 'var(--surface-600)' }}>
-                        {amt > 0 ? `${amt.toLocaleString()}원` : '-'}
-                      </TableCell>
-                    )
-                  })}
-                  <TableCell style={{ textAlign: 'right', padding: '4px 4px', fontWeight: 500, backgroundColor: 'var(--surface-50)', color: 'var(--surface-700)' }}>
-                    {annualExpensesByCategory[cat] > 0 ? `${annualExpensesByCategory[cat].toLocaleString()}원` : '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
-
               {/* Net Profit */}
               <TableRow style={{ backgroundColor: 'var(--success-50)', fontWeight: 'bold' }}>
                 <TableCell style={{ textAlign: 'center' }}>순이익 (A-B)</TableCell>
@@ -581,6 +561,97 @@ export default function ClientPage({
                 ))}
                 <TableCell style={{ textAlign: 'right', fontSize: '0.95rem', color: 'var(--primary-600)', padding: '6px 4px' }}>
                   {annualTotalRevenue.toLocaleString()}원
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Table 3: Monthly Expenditure Categories Pivot Table */}
+      <Card className="print-table-container">
+        <CardHeader className="no-print">
+          <CardTitle className="text-lg">월별 지출 비용 항목 집계표</CardTitle>
+        </CardHeader>
+        <CardContent style={{ padding: '1.5rem', overflowX: 'auto' }}>
+          <Table style={{ tableLayout: 'fixed', width: '100%' }}>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="print-sticky" style={{ 
+                  width: '12%',
+                  minWidth: '120px', 
+                  position: 'sticky', 
+                  left: 0, 
+                  backgroundColor: 'var(--surface-50)', 
+                  zIndex: 10,
+                  boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                  borderRight: '1px solid var(--surface-200)'
+                }}>
+                  지출 항목
+                </TableHead>
+                {months.map(m => (
+                  <TableHead key={m} style={{ width: '6.5%', minWidth: '65px', textAlign: 'right', fontWeight: 'bold' }}>{m}월</TableHead>
+                ))}
+                <TableHead style={{ width: '10%', minWidth: '90px', textAlign: 'right', fontWeight: 'bold', backgroundColor: 'var(--surface-50)' }}>합계</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {expenseCategories.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={14} style={{ textAlign: 'center', color: 'var(--surface-500)' }}>
+                    등록된 지출 내역이 없습니다.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                expenseCategories.map(cat => {
+                  return (
+                    <TableRow key={cat}>
+                      <TableCell className="font-medium print-sticky" style={{ 
+                        position: 'sticky', 
+                        left: 0, 
+                        backgroundColor: 'white', 
+                        zIndex: 5,
+                        boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                        borderRight: '1px solid var(--surface-200)',
+                        wordBreak: 'break-all'
+                      }}>
+                        {cat}
+                      </TableCell>
+                      {months.map(m => {
+                        const amt = monthlyExpensesByCategory[cat]?.[m] || 0
+                        return (
+                          <TableCell key={m} style={{ textAlign: 'right', padding: '6px 4px' }}>
+                            {amt > 0 ? `${amt.toLocaleString()}원` : '-'}
+                          </TableCell>
+                        )
+                      })}
+                      <TableCell className="font-semibold" style={{ textAlign: 'right', backgroundColor: 'var(--surface-50)', padding: '6px 4px' }}>
+                        {annualExpensesByCategory[cat] > 0 ? `${annualExpensesByCategory[cat].toLocaleString()}원` : '-'}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+
+              {/* Grand Total Row */}
+              <TableRow style={{ backgroundColor: 'var(--surface-100)', fontWeight: 'bold' }}>
+                <TableCell className="print-sticky" style={{ 
+                  position: 'sticky', 
+                  left: 0, 
+                  backgroundColor: 'var(--surface-100)', 
+                  zIndex: 5,
+                  boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                  borderRight: '1px solid var(--surface-200)'
+                }}>
+                  합계
+                </TableCell>
+                {months.map(m => (
+                  <TableCell key={m} style={{ textAlign: 'right', padding: '6px 4px' }}>
+                    {monthlyTotalExpenses[m] > 0 ? `${monthlyTotalExpenses[m].toLocaleString()}원` : '-'}
+                  </TableCell>
+                ))}
+                <TableCell style={{ textAlign: 'right', fontSize: '0.95rem', color: 'var(--danger)', padding: '6px 4px' }}>
+                  {annualTotalExpenses.toLocaleString()}원
                 </TableCell>
               </TableRow>
             </TableBody>
